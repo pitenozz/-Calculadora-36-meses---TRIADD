@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculadora 36 meses - TRIADD</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Calculadora 36 meses - TRIADD</h1>
+      <p class="subtitle">Some períodos de trabalho para comprovar 36 meses em regime CLT</p>
+    </header>
+
+    <main>
+      <div class="form-row">
+        <label>Data inicial
+          <input type="date" id="dataInicial" />
+        </label>
+
+        <label>Data final
+          <input type="date" id="dataFinal" />
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="btnAdd">Adicionar Período</button>
+        <button id="btnClear" class="secondary">Limpar</button>
+      </div>
+
+      <section id="listaPeriodos" class="card">
+        <h2>Períodos adicionados</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Data Inicial</th>
+              <th>Data Final</th>
+              <th>Período</th>
+              <th>Somatório Parcial</th>
+            </tr>
+          </thead>
+          <tbody id="periodos"></tbody>
+        </table>
+      </section>
+
+      <section id="resultado" class="card"></section>
+
+      <div class="progress-container">
+        <div id="progressBar" class="progress-bar"></div>
+        <div id="progressText" class="progress-text">0% - Em andamento</div>
+      </div>
+    </main>
+
+    <footer>
+      <small>Desenvolvido por TRIADD Assessoria Financeira</small>
+    </footer>
+  </div>
+
+  <script>
+    // Lógica da calculadora
+    let totalDias = 0;
+    let periodos = [];
+
+    function parseDate(str) {
+      if (!str || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return null;
+      const [y, m, d] = str.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d));
+    }
+
+    function diffDiasEntre(inicio, fim) {
+      const msPorDia = 1000 * 60 * 60 * 24;
+      const iUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate());
+      const fUTC = Date.UTC(fim.getUTCFullYear(), fim.getUTCMonth(), fim.getUTCDate());
+      return Math.floor((fUTC - iUTC) / msPorDia);
+    }
+
+    function formatBRUTC(date) {
+      // Converte UTC para exibição local sem alterar dia
+      const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+      return d.toLocaleDateString('pt-BR');
+    }
+
+    function atualizarBarra(totalMeses) {
+      const progresso = Math.min((Number(totalMeses) / 36) * 100, 100);
+      const progressBar = document.getElementById("progressBar");
+      const progressText = document.getElementById("progressText");
+      progressBar.style.width = progresso + "%";
+
+      if (progresso <= 50) progressBar.style.background = "#f1c40f";
+      else if (progresso <= 75) progressBar.style.background = "#e67e22";
+      else if (progresso < 100) progressBar.style.background = "#2ecc71";
+      else progressBar.style.background = "#27ae60";
+
+      progressText.textContent = progresso < 100 ? Math.floor(progresso) + "% - Em andamento" : "100% - Concluído";
+    }
+
+    function atualizarResultado() {
+      const totalMeses = totalDias / 30.44;
+      const totalAnos = totalDias / 365.25;
+      const mesesFaltando = Math.max(36 - totalMeses, 0);
+      const diasFaltando = Math.max(Math.floor((36 * 30.44) - totalDias), 0);
+
+      const status = totalMeses >= 36
+        ? "✅ Requisito de 36 meses atingido!"
+        : `⏳ Ainda faltam ${mesesFaltando.toFixed(1)} meses (${diasFaltando} dias).`;
+
+      document.getElementById("resultado").innerHTML = `
+        <strong>Total acumulado:</strong><br>
+        📆 ${totalMeses.toFixed(1)} meses<br>
+        📅 ${totalDias} dias<br>
+        🎉 ${totalAnos.toFixed(1)} anos<br><br>
+        ${status}
+      `;
+
+      atualizarBarra(totalMeses);
+    }
+
+    function adicionarPeriodo() {
+      const inicioStr = document.getElementById("dataInicial").value;
+      const fimStr = document.getElementById("dataFinal").value;
+      const inicio = parseDate(inicioStr);
+      const fim = parseDate(fimStr);
+
+      if (!inicio || !fim || fim < inicio) {
+        alert("Por favor, insira datas válidas (a final deve ser posterior à inicial).");
+        return;
+      }
+
+      const duplicado = periodos.some(p => p.inicio === inicioStr && p.fim === fimStr);
+      if (duplicado) {
+        alert("Este período já foi adicionado.");
+        return;
+      }
+
+      const diffDias = diffDiasEntre(inicio, fim);
+      if (!isFinite(diffDias) || diffDias <= 0) {
+        alert("Período inválido. Verifique as datas.");
+        return;
+      }
+
+      totalDias += diffDias;
+      periodos.push({ inicio: inicioStr, fim: fimStr, dias: diffDias });
+
+      const parcialMeses = totalDias / 30.44;
+      const lista = document.getElementById("periodos");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${formatBRUTC(inicio)}</td>
+        <td>${formatBRUTC(fim)}</td>
+        <td>${(diffDias / 30.44).toFixed(1)} meses (${diffDias} dias)</td>
+        <td>${parcialMeses.toFixed(1)} meses (${totalDias} dias)</td>
+      `;
+      lista.appendChild(row);
+
+      atualizarResultado();
+      // limpar inputs para facilitar novo registro
+      document.getElementById("dataInicial").value = "";
+      document.getElementById("dataFinal").value = "";
+    }
+
+    function limpar() {
+      totalDias = 0;
+      periodos = [];
+      document.getElementById("periodos").innerHTML = "";
+      document.getElementById("resultado").innerText = "";
+      document.getElementById("dataInicial").value = "";
+      document.getElementById("dataFinal").value = "";
+      atualizarBarra(0);
+      document.getElementById("progressText").textContent = "0% - Em andamento";
+    }
+
+    // Eventos
+    document.getElementById("btnAdd").addEventListener("click", adicionarPeriodo);
+    document.getElementById("btnClear").addEventListener("click", limpar);
+  </script>
+</body>
+</html>
