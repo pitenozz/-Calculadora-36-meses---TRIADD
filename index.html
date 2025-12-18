@@ -97,19 +97,19 @@
     function parseDate(str) {
       if (!str || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return null;
       const [y, m, d] = str.split('-').map(Number);
-      return new Date(Date.UTC(y, m - 1, d));
+      return new Date(y, m - 1, d, 12); // meio-dia evita problemas de DST
     }
 
     // ✅ Correção: soma +1 para incluir o dia inicial
     function diffDiasEntre(inicio, fim) {
       const msPorDia = 1000 * 60 * 60 * 24;
-      const iUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate());
-      const fUTC = Date.UTC(fim.getUTCFullYear(), fim.getUTCMonth(), fim.getUTCDate());
-      return Math.floor((fUTC - iUTC) / msPorDia) + 1;
+      const i = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate(), 12);
+      const f = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate(), 12);
+      return Math.round((f - i) / msPorDia) + 1;
     }
 
     function formatBR(date) {
-      return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate())
              .toLocaleDateString('pt-BR');
     }
 
@@ -155,7 +155,7 @@
       const fim = parseDate(fimStr);
 
       if (!inicio || !fim || fim < inicio) {
-        alert("Por favor, insira datas válidas (a final deve ser posterior à inicial).");
+        alert("Por favor, insira datas válidas (a final deve ser posterior ou igual à inicial).");
         return;
       }
 
@@ -165,19 +165,19 @@
         return;
       }
 
-      const diffDias = diffDiasEntre(inicio, fim);
-      if (!isFinite(diffDias) || diffDias <= 0) {
+      const dias = diffDiasEntre(inicio, fim);
+      if (!Number.isFinite(dias) || dias <= 0) {
         alert("Período inválido. Verifique as datas.");
         return;
       }
 
-      totalDias += diffDias;
-      periodos.push({ inicio: inicioStr, fim: fimStr, dias: diffDias });
+      totalDias += dias;
+      periodos.push({ inicio: inicioStr, fim: fimStr, dias });
 
       const parcialMeses = totalDias / 30.44;
-      const lista = document.getElementById("periodos");
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${formatBR(inicio)}</td>
         <td>${formatBR(fim)}</td>
-        <td>${(diffDias / 30.44).toFixed(1)} meses
+        <td>${(dias / 30.44).toFixed(1)} meses (${dias} dias)</td>
+        <td>${parcial
