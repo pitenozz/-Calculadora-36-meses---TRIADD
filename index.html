@@ -4,61 +4,93 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Calculadora 36 meses - TRIADD</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f7fa, #f1f8e9);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      margin-top: 40px;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      width: 600px;
+      text-align: center;
+    }
+    h2 { color: #2c3e50; margin-bottom: 10px; font-weight: 600; }
+    label { display: block; margin-top: 15px; font-weight: 600; color: #34495e; text-align: left; }
+    input[type="date"] {
+      padding: 10px; margin-top: 5px; width: 100%;
+      border: 1px solid #ccc; border-radius: 8px; font-size: 14px;
+    }
+    button {
+      margin-top: 15px; padding: 12px 18px; border: none; border-radius: 8px;
+      background: #3498db; color: #fff; font-weight: 600; cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    button:hover { background: #2980b9; transform: scale(1.05); }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; border-radius: 8px; overflow: hidden; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 14px; }
+    th { background: #3498db; color: #fff; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    tr:nth-child(odd) { background: #eef7fb; }
+    .card { background: #ecf0f1; padding: 15px; border-radius: 10px; margin-top: 15px; font-size: 15px; }
+    .progress-container {
+      width: 100%; background: #ddd; border-radius: 10px; margin-top: 20px;
+      height: 30px; overflow: hidden; position: relative;
+    }
+    .progress-bar {
+      height: 100%; width: 0%; text-align: center; color: #fff; font-weight: bold;
+      line-height: 30px; transition: width 0.8s ease, background 0.5s ease;
+    }
+    .progress-text {
+      position: absolute; width: 100%; text-align: center; top: 0; left: 0;
+      line-height: 30px; font-weight: 600; color: #2c3e50;
+    }
+    footer { margin-top: 25px; font-size: 12px; color: #7f8c8d; text-align: center; }
+  </style>
 </head>
 <body>
   <div class="container">
-    <header class="header">
-      <h1>Calculadora 36 meses - TRIADD</h1>
-      <p class="subtitle">Some períodos de trabalho para comprovar 36 meses em regime CLT</p>
-    </header>
+    <h2>Calculadora 36 meses - TRIADD</h2>
+    <label>Data inicial: <input type="date" id="dataInicial"></label>
+    <label>Data final: <input type="date" id="dataFinal"></label>
+    <button onclick="adicionarPeriodo()">Adicionar Período</button>
+    <button onclick="limpar()">Limpar</button>
 
-    <main>
-      <div class="form-row">
-        <label>Data inicial
-          <input type="date" id="dataInicial" />
-        </label>
+    <div id="listaPeriodos">
+      <h3>Períodos adicionados:</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Data Inicial</th>
+            <th>Data Final</th>
+            <th>Período</th>
+            <th>Somatório Parcial</th>
+          </tr>
+        </thead>
+        <tbody id="periodos"></tbody>
+      </table>
+    </div>
 
-        <label>Data final
-          <input type="date" id="dataFinal" />
-        </label>
-      </div>
+    <div id="resultado" class="card"></div>
 
-      <div class="actions">
-        <button id="btnAdd">Adicionar Período</button>
-        <button id="btnClear" class="secondary">Limpar</button>
-      </div>
+    <div class="progress-container">
+      <div id="progressBar" class="progress-bar"></div>
+      <div id="progressText" class="progress-text">0% - Em andamento</div>
+    </div>
 
-      <section id="listaPeriodos" class="card">
-        <h2>Períodos adicionados</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Data Inicial</th>
-              <th>Data Final</th>
-              <th>Período</th>
-              <th>Somatório Parcial</th>
-            </tr>
-          </thead>
-          <tbody id="periodos"></tbody>
-        </table>
-      </section>
-
-      <section id="resultado" class="card"></section>
-
-      <div class="progress-container">
-        <div id="progressBar" class="progress-bar"></div>
-        <div id="progressText" class="progress-text">0% - Em andamento</div>
-      </div>
-    </main>
-
-    <footer>
-      <small>Desenvolvido por TRIADD Assessoria Financeira</small>
-    </footer>
+    <footer>Desenvolvido por TRIADD Assessoria Financeira</footer>
   </div>
 
   <script>
-    // Lógica da calculadora
     let totalDias = 0;
     let periodos = [];
 
@@ -68,17 +100,17 @@
       return new Date(Date.UTC(y, m - 1, d));
     }
 
+    // ✅ Correção: soma +1 para incluir o dia inicial
     function diffDiasEntre(inicio, fim) {
       const msPorDia = 1000 * 60 * 60 * 24;
       const iUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate());
       const fUTC = Date.UTC(fim.getUTCFullYear(), fim.getUTCMonth(), fim.getUTCDate());
-      return Math.floor((fUTC - iUTC) / msPorDia);
+      return Math.floor((fUTC - iUTC) / msPorDia) + 1;
     }
 
-    function formatBRUTC(date) {
-      // Converte UTC para exibição local sem alterar dia
-      const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-      return d.toLocaleDateString('pt-BR');
+    function formatBR(date) {
+      return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+             .toLocaleDateString('pt-BR');
     }
 
     function atualizarBarra(totalMeses) {
@@ -109,7 +141,7 @@
         <strong>Total acumulado:</strong><br>
         📆 ${totalMeses.toFixed(1)} meses<br>
         📅 ${totalDias} dias<br>
-        📆 ${totalAnos.toFixed(1)} anos<br><br>
+        🎉 ${totalAnos.toFixed(1)} anos<br><br>
         ${status}
       `;
 
@@ -146,34 +178,6 @@
       const lista = document.getElementById("periodos");
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td>${formatBRUTC(inicio)}</td>
-        <td>${formatBRUTC(fim)}</td>
-        <td>${(diffDias / 30.44).toFixed(1)} meses (${diffDias} dias)</td>
-        <td>${parcialMeses.toFixed(1)} meses (${totalDias} dias)</td>
-      `;
-      lista.appendChild(row);
-
-      atualizarResultado();
-      // limpar inputs para facilitar novo registro
-      document.getElementById("dataInicial").value = "";
-      document.getElementById("dataFinal").value = "";
-    }
-
-    function limpar() {
-      totalDias = 0;
-      periodos = [];
-      document.getElementById("periodos").innerHTML = "";
-      document.getElementById("resultado").innerText = "";
-      document.getElementById("dataInicial").value = "";
-      document.getElementById("dataFinal").value = "";
-      atualizarBarra(0);
-      document.getElementById("progressText").textContent = "0% - Em andamento";
-    }
-
-    // Eventos
-    document.getElementById("btnAdd").addEventListener("click", adicionarPeriodo);
-    document.getElementById("btnClear").addEventListener("click", limpar);
-  </script>
-</body>
-</html>
-
+        <td>${formatBR(inicio)}</td>
+        <td>${formatBR(fim)}</td>
+        <td>${(diffDias / 30.44).toFixed(1)} meses
