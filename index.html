@@ -3,26 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Calculadora 36 meses - TRIADD</title>
+  <title>Calculadora 36 meses</title>
   <style>
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
       background: linear-gradient(135deg, #e0f7fa, #f1f8e9);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
+      margin: 0; padding: 0;
+      display: flex; justify-content: center; align-items: flex-start;
       min-height: 100vh;
     }
     .container {
-      background: #fff;
-      padding: 30px;
-      margin-top: 40px;
-      border-radius: 16px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-      width: 600px;
-      text-align: center;
+      background: #fff; padding: 30px; margin-top: 40px;
+      border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      width: 600px; text-align: center;
     }
     h2 { color: #2c3e50; margin-bottom: 10px; font-weight: 600; }
     label { display: block; margin-top: 15px; font-weight: 600; color: #34495e; text-align: left; }
@@ -30,8 +23,9 @@
       padding: 10px; margin-top: 5px; width: 100%;
       border: 1px solid #ccc; border-radius: 8px; font-size: 14px;
     }
+    .actions { display:flex; gap:10px; margin-top: 12px; }
     button {
-      margin-top: 15px; padding: 12px 18px; border: none; border-radius: 8px;
+      flex:1; margin-top: 10px; padding: 12px 18px; border: none; border-radius: 8px;
       background: #3498db; color: #fff; font-weight: 600; cursor: pointer;
       transition: all 0.3s ease;
     }
@@ -41,7 +35,7 @@
     th { background: #3498db; color: #fff; }
     tr:nth-child(even) { background: #f9f9f9; }
     tr:nth-child(odd) { background: #eef7fb; }
-    .card { background: #ecf0f1; padding: 15px; border-radius: 10px; margin-top: 15px; font-size: 15px; }
+    .card { background: #ecf0f1; padding: 15px; border-radius: 10px; margin-top: 15px; font-size: 15px; text-align:left; }
     .progress-container {
       width: 100%; background: #ddd; border-radius: 10px; margin-top: 20px;
       height: 30px; overflow: hidden; position: relative;
@@ -59,11 +53,21 @@
 </head>
 <body>
   <div class="container">
-    <h2>Calculadora 36 meses - TRIADD</h2>
-    <label>Data inicial: <input type="date" id="dataInicial"></label>
-    <label>Data final: <input type="date" id="dataFinal"></label>
-    <button onclick="adicionarPeriodo()">Adicionar Período</button>
-    <button onclick="limpar()">Limpar</button>
+    <h2>Calculadora 36 meses</h2>
+
+    <!-- Evite <form> para não submeter; se usar, mantenha type="button" -->
+    <div class="form">
+      <label>Data inicial:
+        <input type="date" id="dataInicial" />
+      </label>
+      <label>Data final:
+        <input type="date" id="dataFinal" />
+      </label>
+      <div class="actions">
+        <button type="button" onclick="adicionarPeriodo()">Adicionar Período</button>
+        <button type="button" onclick="limpar()">Limpar</button>
+      </div>
+    </div>
 
     <div id="listaPeriodos">
       <h3>Períodos adicionados:</h3>
@@ -91,26 +95,31 @@
   </div>
 
   <script>
+    // Estado
     let totalDias = 0;
     let periodos = [];
 
+    // Parse robusto: aceita yyyy-mm-dd do input de data
     function parseDate(str) {
       if (!str || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return null;
       const [y, m, d] = str.split('-').map(Number);
-      return new Date(y, m - 1, d, 12); // meio-dia evita problemas de DST
+      // Meio-dia reduz riscos de DST afetar diferença
+      return new Date(y, m - 1, d, 12);
     }
 
-    // ✅ Correção: soma +1 para incluir o dia inicial
+    // Diferença inclusiva (inclui dia inicial e final) com proteção a DST
     function diffDiasEntre(inicio, fim) {
       const msPorDia = 1000 * 60 * 60 * 24;
+      // Normaliza ambos para meio-dia do dia correspondente
       const i = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate(), 12);
       const f = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate(), 12);
+      // round neutraliza pequenos desvios; +1 inclui o dia inicial
       return Math.round((f - i) / msPorDia) + 1;
     }
 
     function formatBR(date) {
-      return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-             .toLocaleDateString('pt-BR');
+      const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12);
+      return d.toLocaleDateString('pt-BR');
     }
 
     function atualizarBarra(totalMeses) {
@@ -141,24 +150,29 @@
         <strong>Total acumulado:</strong><br>
         📆 ${totalMeses.toFixed(1)} meses<br>
         📅 ${totalDias} dias<br>
-        🎉 ${totalAnos.toFixed(1)} anos<br><br>
+        📅 ${totalAnos.toFixed(1)} anos<br><br>
         ${status}
       `;
-
       atualizarBarra(totalMeses);
     }
 
     function adicionarPeriodo() {
       const inicioStr = document.getElementById("dataInicial").value;
       const fimStr = document.getElementById("dataFinal").value;
+
       const inicio = parseDate(inicioStr);
       const fim = parseDate(fimStr);
 
-      if (!inicio || !fim || fim < inicio) {
-        alert("Por favor, insira datas válidas (a final deve ser posterior ou igual à inicial).");
+      if (!inicio || !fim) {
+        alert("Por favor, preencha as duas datas.");
+        return;
+      }
+      if (fim < inicio) {
+        alert("A data final deve ser posterior ou igual à inicial.");
         return;
       }
 
+      // Previne duplicidade exata
       const duplicado = periodos.some(p => p.inicio === inicioStr && p.fim === fimStr);
       if (duplicado) {
         alert("Este período já foi adicionado.");
@@ -171,13 +185,43 @@
         return;
       }
 
+      // Acumula
       totalDias += dias;
       periodos.push({ inicio: inicioStr, fim: fimStr, dias });
 
+      // Atualiza tabela
       const parcialMeses = totalDias / 30.44;
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${formatBR(inicio)}</td>
         <td>${formatBR(fim)}</td>
         <td>${(dias / 30.44).toFixed(1)} meses (${dias} dias)</td>
-        <td>${parcial
+        <td>${parcialMeses.toFixed(1)} meses (${totalDias} dias)</td>
+      `;
+      document.getElementById("periodos").appendChild(row);
+
+      // Atualiza resumo e barra
+      atualizarResultado();
+
+      // Limpa inputs para facilitar novo registro
+      document.getElementById("dataInicial").value = "";
+      document.getElementById("dataFinal").value = "";
+    }
+
+    function limpar() {
+      totalDias = 0;
+      periodos = [];
+      document.getElementById("periodos").innerHTML = "";
+      document.getElementById("resultado").innerText = "";
+      document.getElementById("dataInicial").value = "";
+      document.getElementById("dataFinal").value = "";
+      atualizarBarra(0);
+      document.getElementById("progressText").textContent = "0% - Em andamento";
+    }
+
+    // Garante funções acessíveis ao onclick no escopo global
+    window.adicionarPeriodo = adicionarPeriodo;
+    window.limpar = limpar;
+  </script>
+</body>
+</html>
